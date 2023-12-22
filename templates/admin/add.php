@@ -4,22 +4,16 @@
     <h2 class="my-4">Ajout d'un projet</h2>
 
     <!-- Message de succès -->
-    <?php if(isset($_SESSION['success'])): ?>
+    <?php if(isset($success)): ?>
         <div class="alert alert-success">
-            <?php
-                echo $_SESSION['success'];
-                unset($_SESSION['success']);
-            ?>
+            <?php echo $success; ?>
         </div>
     <?php endif; ?>
 
-    <!-- Messages d'erreurs -->
-    <?php if(isset($_SESSION['error'])): ?>
+    <!-- Message d'erreur -->
+    <?php if(isset($error)): ?>
         <div class="alert alert-danger">
-            <?php
-                echo $_SESSION['error'];
-                unset($_SESSION['error']);
-            ?>
+            <?php echo $error; ?>
         </div>
     <?php endif; ?>
 

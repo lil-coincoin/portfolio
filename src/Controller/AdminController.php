@@ -5,6 +5,7 @@ use App\Controller\AbstractController;
 
 use App\Repository\ProjetRepository;
 use App\Entity\Projet;
+use App\Service\UploadService;
 
 class AdminController extends AbstractController{
 
@@ -18,6 +19,7 @@ class AdminController extends AbstractController{
             header('Location: /login');
             exit;
         }
+        $this->template = "admin_layout.php";
     }
 
     public function admin():void{
@@ -68,6 +70,10 @@ class AdminController extends AbstractController{
 
             // Vérifier si les champs sont complétés
             if (!empty($title) && !empty($desc)) {
+
+                //Upload de l'image de preview
+                $uploadService = new UploadService;
+                $preview = $uploadService->upload($_FILES['preview']);
 
                 // Vérifie si un upload doit être fait
                 if (isset($_FILES['preview']) && $_FILES['preview']['error'] === UPLOAD_ERR_OK) {
@@ -141,89 +147,53 @@ class AdminController extends AbstractController{
     }
 
     public function add():void{
+        $error = null;
+        $success = null;
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Nettoyage des données reçues
+
+            // Nettoyage des données
             $title = htmlspecialchars(strip_tags($_POST['title']));
-            $desc = htmlspecialchars(strip_tags($_POST['desc']));
-            $preview = $_FILES['preview'];
-        
-            // Vérifier si le formulaire est entièrement rempli
+            $description = htmlspecialchars(strip_tags($_POST['desc']));
+
+            // Vérifie si tous est bien rempli
             if (
                 !empty($title) &&
-                !empty($desc) &&
-                (isset($preview) && $preview['error'] === UPLOAD_ERR_OK)
+                !empty($description) &&
+                $_FILES['preview']['error'] === UPLOAD_ERR_OK
             ) {
-        
-                $typeExt = [
-                    'png' => 'image/png',
-                    'jpg' => 'image/jpeg',
-                    'jpeg' => 'image/jpeg',
-                    'webp' => 'image/webp',
-                ];
-        
-                $sizeMax = 1 * 1024 * 1024;
-                $extension = strtolower(pathinfo($_FILES['preview']['name'], PATHINFO_EXTENSION));
-        
-                // Vérifier si le fichier est bien une image autorisée
-                if (array_key_exists($extension, $typeExt) && in_array($_FILES['preview']['type'], $typeExt)) {
-        
-                    // Vérifie si le poids de l'image ne dépasse pas la limite fixée
-                    if ($_FILES['preview']['size'] <= $sizeMax) {
+                // Upload de l'image de preview
+                $uploadService = new UploadService();
+                $preview = $uploadService->upload($_FILES['preview']);
 
-                        $projet = new ProjetRepository();
-                        $projetSelect = new Projet();
+                if ($preview) {
+                    // Date du jour
+                    $date = new \DateTime();
 
-                        $projetSelect->setTitle($title);
-                        $projetSelect->setDescription($desc);
-                        $projetSelect->setPreview($preview['name']);
-                        $projetSelect->setCreatedAt((new \DateTime('now'))->format('Y-m-d H:i:s'));
-                        $projetSelect->setUpdatedAt((new \DateTime('now'))->format('Y-m-d H:i:s'));
+                    // Créer un objet avec l'entité "Projet"
+                    $projet = new Projet();
+                    $projet->setTitle($title);
+                    $projet->setDescription($description);
+                    $projet->setPreview($preview);
+                    $projet->setCreatedAt($date->format('Y-m-d H:i:s'));
+                    $projet->setUpdatedAt($date->format('Y-m-d H:i:s'));
 
-                        // Insérer en BDD les données
-                        $projet->add($projetSelect);
-        
-                        // Renomme le nom de l'image
-                        $slugify = new \Cocur\Slugify\Slugify();
-                        $newName = $slugify->slugify($projetSelect->getTitle().$projetSelect->getId());
-                        $cover = "$newName.$extension";
-        
-                        // Télécharge la nouvelle image sous le nouveau nom
-                        move_uploaded_file(
-                            $_FILES['preview']['tmp_name'],
-                            $_ENV['FOLDER_PROJECT'].$cover
-                        );
-        
-                        /**
-                         * Met à jour le nom de l'image dans l'objet projet puis on update dans la BDD
-                         */
-                        $projetSelect->setPreview($cover);
-                        $projet->update($projetSelect);
-        
-                        $_SESSION['success'] = "Votre nouvel article a été correctement enregistré";
-        
-                        header('Location: /admin');
-                        exit;
-        
-                    } else {
-                        $_SESSION['error'] = "L'image ne doit pas dépasser les 1Mo";
-                        header('Location: /add');
-                        exit;
-                    }
+                    $projetRepository = new ProjetRepository();
+                    $projetRepository->add($projet);
+
+                    $success = 'Votre nouveau projet est enregistré';
                 } else {
-                    $_SESSION['error'] = "Le fichier n'est pas une image conforme";
-                    header('Location: /add');
-                    exit;
+                    $error = 'Le fichier est invalide';
                 }
-        
             } else {
-                $_SESSION['error'] = 'Tous les champs sont obligatoires';
-                header('Location: /add');
-                exit;
+                $error = 'Tous les champs sont obligatoires';
             }
-        }else{
-            $this->view('admin/add.php');
-            exit;
         }
+
+        $this->view('admin/add.php', [
+            'error' => $error,
+            'success' => $success
+        ]);
     }
 }
 

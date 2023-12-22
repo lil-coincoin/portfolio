@@ -6,6 +6,8 @@ use App\Entity\Users;
 
 abstract class AbstractController
 {
+    protected $template;
+
     /**
      * Verifie si l'utilisateur est connecté
      */
@@ -26,7 +28,11 @@ abstract class AbstractController
         // Si le template existe, on l'affiche
         if (file_exists("../templates/$path")) {
             require_once "../templates/$path";
-            require __DIR__ . "../../../templates/layout.php";
+            if(empty($this->template)){
+                require __DIR__ . "../../../templates/layout.php";
+            }else{
+                require __DIR__ . "../../../templates/$this->template";
+            }
             return;
         }
 
