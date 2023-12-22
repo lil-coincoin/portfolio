@@ -7,7 +7,6 @@ use App\Entity\Users;
 abstract class AbstractController
 {
     protected $layout;
-
     /**
      * Verifie si l'utilisateur est connecté
      */
