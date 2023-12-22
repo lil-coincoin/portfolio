@@ -19,7 +19,7 @@ class AdminController extends AbstractController{
             header('Location: /login');
             exit;
         }
-        $this->template = "admin_layout.php";
+        $this->layout = "admin_layout.php";
     }
 
     public function admin():void{
