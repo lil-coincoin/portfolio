@@ -1,0 +1,8 @@
+# Activation de la réécriture d'URL
+RewriteEngine On
+
+# Condition
+RewriteCond %{REQUEST_URI} !^/public/
+
+# Redirige la totalité de l'URI vers le dossier "public"
+RewriteRule ^(.*)$ public/$1 [L]
